@@ -1,9 +1,40 @@
+# Dependencies
 node_modules/
-.next/
+
+# Hardhat
+artifacts/
+cache/
+typechain/
+typechain-types/
+
+# Build / output
+dist/
+out/
+coverage/
+coverage.json
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Environment variables (IMPORTANT)
 .env
-contracts/.env
-contracts/node_modules/
-env.local
+.env.*
+
+# OS files
 .DS_Store
-.vercel
-.env*.local
+Thumbs.db
+
+# Editor / IDE
+.vscode/
+.idea/
+
+# Misc sensitive files
+*.pem
+*.key
+
+# TypeScript
+*.tsbuildinfo
