@@ -10,7 +10,6 @@ const nextConfig = {
     unoptimized: true,
   },
   serverExternalPackages: ['@zama-fhe/relayer-sdk', 'canvas'],
-  turbopack: {},
 }
 
 export default nextConfig
