@@ -1,6 +1,9 @@
 import { createInstance, SepoliaConfigV2 } from "@zama-fhe/relayer-sdk/node"
 import { NextRequest, NextResponse } from "next/server"
 
+export const runtime = "nodejs"
+export const maxDuration = 60
+
 export async function POST(req: NextRequest) {
   try {
     const { handle, contractAddress, userAddress, publicKey, privateKey, signature, startTimestamp, durationDays } = await req.json()

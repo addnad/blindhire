@@ -14,6 +14,18 @@ export const metadata: Metadata = {
   title: 'BlindHire — Confidential Hiring on-chain',
   description: 'Bias-free hiring powered by Fully Homomorphic Encryption. Employers and candidates match without revealing private data.',
   icons: { icon: [{ url: '/icon.svg', type: 'image/svg+xml' }] },
+  openGraph: {
+    title: 'BlindHire — Confidential Hiring on-chain',
+    description: 'Bias-free hiring powered by Fully Homomorphic Encryption. Employers and candidates match without revealing private data.',
+    url: 'https://blindhire.xyz',
+    siteName: 'BlindHire',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'BlindHire — Confidential Hiring on-chain',
+    description: 'Bias-free hiring powered by Fully Homomorphic Encryption.',
+  },
 }
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

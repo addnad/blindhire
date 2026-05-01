@@ -1,6 +1,9 @@
 import { createInstance, SepoliaConfigV2 } from "@zama-fhe/relayer-sdk/node"
 import { NextRequest, NextResponse } from "next/server"
 
+export const runtime = "nodejs"
+export const maxDuration = 60
+
 function toHex(bytes: Uint8Array | Record<string, number>): `0x${string}` {
   const arr = bytes instanceof Uint8Array ? bytes : Object.values(bytes)
   return ('0x' + Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('')) as `0x${string}`

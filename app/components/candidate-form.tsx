@@ -65,18 +65,39 @@ export default function CandidateForm() {
           <ConnectWallet />
         </div>
       ) : submitted ? (
-        <div className="border border-border rounded-lg p-8 flex flex-col gap-3">
-          <DecryptedText text="Application submitted on-chain." animateOn="view" revealDirection="start" sequential useOriginalCharsOnly={false} speed={50} className="font-mono text-muted-foreground bg-black rounded-md uppercase text-xs" />
-          <h2 className="text-2xl font-semibold">Application submitted.</h2>
-          <p className="text-muted-foreground">The FHE contract computed your match result on encrypted data.</p>
-          <div className="mt-4 bg-secondary rounded-md p-4 font-mono text-xs text-muted-foreground space-y-1">
+        <div className="border border-foreground/10 p-8 flex flex-col gap-6">
+          <span className="inline-flex items-center gap-3 text-sm font-mono text-muted-foreground">
+            <span className="w-8 h-px bg-foreground/30" />
+            Application submitted on-chain
+          </span>
+          <div>
+            <h2 className="text-3xl font-display mb-3">You applied.</h2>
+            <p className="text-muted-foreground leading-relaxed">
+              Your credentials were encrypted and submitted to the FHE contract. 
+              The match has already been computed on-chain — your scores were never revealed.
+            </p>
+          </div>
+
+          <div className="border border-foreground/10 p-4 font-mono text-xs text-muted-foreground space-y-2">
             <p>tx &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ <a href={`https://sepolia.etherscan.io/tx/${txHash}`} target="_blank" rel="noreferrer" className="text-foreground underline">{txHash?.slice(0, 20)}...</a></p>
             <p>FHE.and() → <span className="text-foreground">computed ✓</span></p>
             <p>status &nbsp;&nbsp;→ <span className="text-foreground">confirmed ✓</span></p>
           </div>
-          <div className="flex gap-3 mt-2">
-            <Button variant="outline" onClick={handleReset}>Apply Again</Button>
-            <Button asChild variant="outline"><a href="/dashboard">View Dashboard</a></Button>
+
+          <div className="border border-foreground/10 p-6 flex flex-col gap-3">
+            <p className="font-mono text-xs text-muted-foreground uppercase tracking-widest">What happens next</p>
+            <p className="text-foreground leading-relaxed">
+              Go to your <strong>Dashboard → Candidate tab</strong> to reveal your match result. 
+              You will be asked to sign a message with your wallet to decrypt your personal result. 
+              The employer never sees your scores — only you can decrypt your outcome.
+            </p>
+          </div>
+
+          <div className="flex gap-3">
+            <Button asChild size="lg" className="bg-foreground text-background hover:bg-foreground/90 rounded-full px-8">
+              <a href="/dashboard">Reveal my result →</a>
+            </Button>
+            <Button variant="outline" className="rounded-full px-8" onClick={handleReset}>Apply Again</Button>
           </div>
         </div>
       ) : (
