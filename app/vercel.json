@@ -1,5 +1,4 @@
 {
-  "rootDirectory": "app",
   "buildCommand": "next build --webpack",
   "installCommand": "pnpm install",
   "framework": "nextjs"
