@@ -54,7 +54,9 @@ export function AnimatedWave() {
           const charIndex = Math.floor(normalized * (chars.length - 1));
           const alpha = 0.15 + normalized * 0.5;
 
-          ctx.fillStyle = `rgba(0, 0, 0, ${alpha})`;
+          const isDark = document.documentElement.classList.contains('dark');
+          const rgb = isDark ? '255,255,255' : '0,0,0';
+          ctx.fillStyle = `rgba(${rgb}, ${alpha})`;
           ctx.fillText(chars[charIndex], px, py);
         }
       }
