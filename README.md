@@ -30,7 +30,7 @@ ebool matched = FHE.and(yearsOk, scoreOk);
 ## Run locally
 
 ```bash
-git clone https://github.com/giwaov/blindhire
+git clone https://github.com/addnad/blindhire
 cd blindhire
 pnpm install
 pnpm dev
