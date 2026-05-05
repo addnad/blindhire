@@ -13,7 +13,7 @@ const footerLinks = {
   ],
   Protocol: [
     { name: "Zama FHEVM", href: "https://docs.zama.ai" },
-    { name: "Smart Contract", href: "https://sepolia.etherscan.io/address/0xa0bB4e71d0d28068b39DA4c22EFeB8f9A72dfD2e" },
+    { name: "Smart Contract", href: "https://sepolia.etherscan.io/address/0x0f2Aae67f74EBDA62767084B15Fb7524f8ec2D86" },
     { name: "OpenZeppelin", href: "https://github.com/OpenZeppelin/openzeppelin-confidential-contracts" },
     { name: "Sepolia Testnet", href: "https://sepolia.etherscan.io" },
   ],
@@ -84,7 +84,7 @@ export function FooterSection() {
         {/* Bottom Bar */}
         <div className="py-8 border-t border-foreground/10 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground font-mono">
-            © 2026 BlindHire · Deployed on Sepolia · 0xa0bB4e71...dfD2e
+            © 2026 BlindHire · Deployed on Sepolia · 0x0f2Aae67...2D86
           </p>
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <span className="flex items-center gap-2">

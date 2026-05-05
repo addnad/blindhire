@@ -166,7 +166,7 @@ export function HowItWorksSection() {
               </div>
               <div className="px-6 py-4 border-t border-background/10 flex items-center gap-3">
                 <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                <span className="text-xs font-mono text-background/40">Sepolia · 0xa0bB4e71...dfD2e</span>
+                <span className="text-xs font-mono text-background/40">Sepolia · 0x0f2Aae67...2D86</span>
               </div>
             </div>
           </div>

@@ -23,13 +23,13 @@ export default function FooterSection() {
               <p className="font-mono text-xs text-muted-foreground uppercase tracking-widest">Built with</p>
               <div className="flex flex-col gap-2">
                 <a href="https://docs.zama.org" target="_blank" rel="noreferrer" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Zama FHEVM</a>
-                <a href="https://sepolia.etherscan.io/address/0xa0bB4e71d0d28068b39DA4c22EFeB8f9A72dfD2e" target="_blank" rel="noreferrer" className="text-sm text-muted-foreground hover:text-foreground transition-colors font-mono">Contract ↗</a>
+                <a href="https://sepolia.etherscan.io/address/0x0f2Aae67f74EBDA62767084B15Fb7524f8ec2D86" target="_blank" rel="noreferrer" className="text-sm text-muted-foreground hover:text-foreground transition-colors font-mono">Contract ↗</a>
               </div>
             </div>
           </div>
         </div>
         <div className="mt-12 pt-6 border-t border-border flex items-center justify-end">
-          <p className="text-xs text-muted-foreground font-mono">Deployed on Sepolia · 0xa0bB4e71...dfD2e</p>
+          <p className="text-xs text-muted-foreground font-mono">Deployed on Sepolia · 0x0f2Aae67...2D86</p>
         </div>
       </div>
     </footer>
