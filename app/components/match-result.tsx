@@ -24,6 +24,8 @@ export default function MatchResult({ appId, onMatchConfirmed }: Props) {
     abi: BLINDHIRE_ABI,
     functionName: 'getMatchResult',
     args: [appId],
+    account: address,
+    query: { enabled: !!address },
   })
 
   const { data: matchDetails } = useReadContract({
@@ -31,6 +33,8 @@ export default function MatchResult({ appId, onMatchConfirmed }: Props) {
     abi: BLINDHIRE_ABI,
     functionName: 'getMatchDetails',
     args: [appId],
+    account: address,
+    query: { enabled: !!address },
   })
 
   const { data: appInfo, refetch: refetchAppInfo } = useReadContract({
@@ -38,6 +42,8 @@ export default function MatchResult({ appId, onMatchConfirmed }: Props) {
     abi: BLINDHIRE_ABI,
     functionName: 'getApplicationInfo',
     args: [appId],
+    account: address,
+    query: { enabled: !!address },
   })
 
   const matchAlreadyRevealed = appInfo?.[2] ?? false
@@ -47,6 +53,7 @@ export default function MatchResult({ appId, onMatchConfirmed }: Props) {
 
   const handleDecrypt = async () => {
     if (!address || !encryptedHandle) return
+    const handle = (encryptedHandle as string).toLowerCase() as `0x${string}`
     if (typeof window === 'undefined' || !window.ethereum) {
       setError('No Ethereum wallet detected. Please install MetaMask or use a Web3 browser.')
       return
@@ -54,7 +61,12 @@ export default function MatchResult({ appId, onMatchConfirmed }: Props) {
     setLoading(true)
     setError('')
     try {
-      const { createInstance, SepoliaConfigV2 } = await import('@zama-fhe/relayer-sdk/web')
+      const sdk = await import('@zama-fhe/relayer-sdk/web')
+      const { createInstance, SepoliaConfigV2, initSDK } = sdk
+
+      // Initialize WASM before creating instance
+
+      await initSDK()
       const instance = await createInstance({ ...SepoliaConfigV2, network: window.ethereum })
       const { privateKey, publicKey } = instance.generateKeypair()
       const startTimestamp = Math.floor(Date.now() / 1000)
@@ -63,7 +75,7 @@ export default function MatchResult({ appId, onMatchConfirmed }: Props) {
       const signature = await signTypedDataAsync(eip712 as any)
 
       const mainResult = await instance.userDecrypt(
-        [{ handle: encryptedHandle, contractAddress: BLINDHIRE_ADDRESS }],
+        [{ handle, contractAddress: BLINDHIRE_ADDRESS }],
         privateKey,
         publicKey,
         signature,
@@ -72,12 +84,18 @@ export default function MatchResult({ appId, onMatchConfirmed }: Props) {
         startTimestamp,
         durationDays,
       )
-      const isMatch = toBoolean(mainResult[encryptedHandle as `0x${string}`]?.toString())
+      const rawMatch = mainResult[handle]
+      if (rawMatch === undefined) {
+        setError('Decrypt returned no value — handle not authorized or wrong network')
+        setLoading(false)
+        return
+      }
+      const isMatch = toBoolean(rawMatch.toString())
       setResult(isMatch)
 
       if (matchDetails) {
-        const yearsHandle = (matchDetails as any)[0]
-        const scoreHandle = (matchDetails as any)[1]
+        const yearsHandle = ((matchDetails as any)[0] as string).toLowerCase() as `0x${string}`
+        const scoreHandle = ((matchDetails as any)[1] as string).toLowerCase() as `0x${string}`
         const detailsResult = await instance.userDecrypt(
           [
             { handle: yearsHandle, contractAddress: BLINDHIRE_ADDRESS },
@@ -97,7 +115,6 @@ export default function MatchResult({ appId, onMatchConfirmed }: Props) {
         })
       }
 
-      // If matched and not yet confirmed on-chain, call confirmMatch
       if (isMatch && !matchAlreadyRevealed) {
         setConfirming(true)
         try {
@@ -111,7 +128,6 @@ export default function MatchResult({ appId, onMatchConfirmed }: Props) {
           onMatchConfirmed?.()
         } catch (confirmErr) {
           console.error('confirmMatch failed:', confirmErr)
-          // Non-fatal — result still shown to candidate
         } finally {
           setConfirming(false)
         }
@@ -124,7 +140,10 @@ export default function MatchResult({ appId, onMatchConfirmed }: Props) {
     }
   }
 
-  if (!encryptedHandle) return null
+  if (!address) return null
+  if (!encryptedHandle) return (
+    <p className="text-xs text-muted-foreground font-mono mt-4">Loading match result...</p>
+  )
 
   return (
     <div className="mt-4 space-y-3">
