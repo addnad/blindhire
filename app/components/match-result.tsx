@@ -1,19 +1,23 @@
 'use client'
 import React from 'react'
-import { useAccount, useReadContract, useSignTypedData } from 'wagmi'
+import { useAccount, useReadContract, useSignTypedData, useWriteContract } from 'wagmi'
 import { Button } from '@/components/ui/button'
 import { BLINDHIRE_ABI, BLINDHIRE_ADDRESS } from '@/lib/abi'
 
 interface Props {
   appId: bigint
+  onMatchConfirmed?: () => void
 }
 
-export default function MatchResult({ appId }: Props) {
+const toBoolean = (val: unknown): boolean => val === true || val === 1 || val === 'true' || val === '1'
+
+export default function MatchResult({ appId, onMatchConfirmed }: Props) {
   const { address } = useAccount()
   const [result, setResult] = React.useState<boolean | null>(null)
   const [details, setDetails] = React.useState<{ yearsOk: boolean; scoreOk: boolean } | null>(null)
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState('')
+  const [confirming, setConfirming] = React.useState(false)
 
   const { data: encryptedHandle } = useReadContract({
     address: BLINDHIRE_ADDRESS,
@@ -29,10 +33,24 @@ export default function MatchResult({ appId }: Props) {
     args: [appId],
   })
 
+  const { data: appInfo, refetch: refetchAppInfo } = useReadContract({
+    address: BLINDHIRE_ADDRESS,
+    abi: BLINDHIRE_ABI,
+    functionName: 'getApplicationInfo',
+    args: [appId],
+  })
+
+  const matchAlreadyRevealed = appInfo?.[2] ?? false
+
   const { signTypedDataAsync } = useSignTypedData()
+  const { writeContractAsync } = useWriteContract()
 
   const handleDecrypt = async () => {
     if (!address || !encryptedHandle) return
+    if (typeof window === 'undefined' || !window.ethereum) {
+      setError('No Ethereum wallet detected. Please install MetaMask or use a Web3 browser.')
+      return
+    }
     setLoading(true)
     setError('')
     try {
@@ -44,28 +62,59 @@ export default function MatchResult({ appId }: Props) {
       const eip712 = instance.createEIP712(publicKey, [BLINDHIRE_ADDRESS], startTimestamp, durationDays)
       const signature = await signTypedDataAsync(eip712 as any)
 
-      const res = await fetch('/api/decrypt', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ handle: encryptedHandle, contractAddress: BLINDHIRE_ADDRESS, userAddress: address, publicKey, privateKey, signature, startTimestamp, durationDays }),
-      })
-      if (!res.ok) throw new Error('Decryption failed')
-      const data = await res.json()
-      setResult(data.result === 'true' || data.result === '1' || data.result === true)
+      const mainResult = await instance.userDecrypt(
+        [{ handle: encryptedHandle, contractAddress: BLINDHIRE_ADDRESS }],
+        privateKey,
+        publicKey,
+        signature,
+        [BLINDHIRE_ADDRESS],
+        address,
+        startTimestamp,
+        durationDays,
+      )
+      const isMatch = toBoolean(mainResult[encryptedHandle as `0x${string}`]?.toString())
+      setResult(isMatch)
 
       if (matchDetails) {
         const yearsHandle = (matchDetails as any)[0]
         const scoreHandle = (matchDetails as any)[1]
-        const [yearsRes, scoreRes] = await Promise.all([
-          fetch('/api/decrypt', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ handle: yearsHandle, contractAddress: BLINDHIRE_ADDRESS, userAddress: address, publicKey, privateKey, signature, startTimestamp, durationDays }) }),
-          fetch('/api/decrypt', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ handle: scoreHandle, contractAddress: BLINDHIRE_ADDRESS, userAddress: address, publicKey, privateKey, signature, startTimestamp, durationDays }) }),
-        ])
-        const yearsData = await yearsRes.json()
-        const scoreData = await scoreRes.json()
+        const detailsResult = await instance.userDecrypt(
+          [
+            { handle: yearsHandle, contractAddress: BLINDHIRE_ADDRESS },
+            { handle: scoreHandle, contractAddress: BLINDHIRE_ADDRESS },
+          ],
+          privateKey,
+          publicKey,
+          signature,
+          [BLINDHIRE_ADDRESS],
+          address,
+          startTimestamp,
+          durationDays,
+        )
         setDetails({
-          yearsOk: yearsData.result === 'true' || yearsData.result === '1' || yearsData.result === true,
-          scoreOk: scoreData.result === 'true' || scoreData.result === '1' || scoreData.result === true,
+          yearsOk: toBoolean(detailsResult[yearsHandle as `0x${string}`]?.toString()),
+          scoreOk: toBoolean(detailsResult[scoreHandle as `0x${string}`]?.toString()),
         })
+      }
+
+      // If matched and not yet confirmed on-chain, call confirmMatch
+      if (isMatch && !matchAlreadyRevealed) {
+        setConfirming(true)
+        try {
+          await writeContractAsync({
+            address: BLINDHIRE_ADDRESS,
+            abi: BLINDHIRE_ABI,
+            functionName: 'confirmMatch',
+            args: [appId],
+          })
+          await refetchAppInfo()
+          onMatchConfirmed?.()
+        } catch (confirmErr) {
+          console.error('confirmMatch failed:', confirmErr)
+          // Non-fatal — result still shown to candidate
+        } finally {
+          setConfirming(false)
+        }
       }
     } catch (err) {
       console.error(err)
@@ -80,14 +129,19 @@ export default function MatchResult({ appId }: Props) {
   return (
     <div className="mt-4 space-y-3">
       {result === null ? (
-        <Button variant="outline" size="sm" onClick={handleDecrypt} disabled={loading}>
-          {loading ? 'Sign to decrypt...' : 'Reveal match result'}
+        <Button variant="outline" size="sm" onClick={handleDecrypt} disabled={loading || confirming}>
+          {loading ? 'Sign to decrypt...' : confirming ? 'Confirming match on-chain...' : 'Reveal match result'}
         </Button>
       ) : (
         <div className="space-y-3">
           <div className={`rounded-md px-4 py-3 font-mono text-sm border ${result ? 'bg-secondary border-border text-foreground' : 'bg-secondary border-border text-muted-foreground'}`}>
             {result ? 'Match — you cleared the bar ✓' : 'No match — requirements not met ✗'}
           </div>
+          {result && (matchAlreadyRevealed || confirming) && (
+            <p className="font-mono text-xs text-muted-foreground">
+              {confirming ? 'Notifying employer on-chain...' : 'Employer notified on-chain ✓'}
+            </p>
+          )}
           {details && (
             <div className="bg-secondary rounded-md p-4 font-mono text-xs space-y-2">
               <p className="text-muted-foreground uppercase tracking-widest text-xs mb-2">Confidential score breakdown</p>

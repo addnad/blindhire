@@ -3,7 +3,7 @@ import { sepolia } from 'wagmi/chains'
 
 export const config = getDefaultConfig({
   appName: 'BlindHire',
-  projectId: 'blindhire',
+  projectId: 'ca8f14d7931a25a609ab9391bda05fde',
   chains: [sepolia],
   ssr: true,
 })

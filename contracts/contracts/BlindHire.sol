@@ -23,6 +23,7 @@ contract BlindHire is ZamaEthereumConfig {
         ebool yearsOk;
         ebool scoreOk;
         bool computed;
+        bool matchRevealed;
     }
 
     uint256 public roleCount;
@@ -32,10 +33,15 @@ contract BlindHire is ZamaEthereumConfig {
     mapping(uint256 => Application) public applications;
     mapping(address => uint256[]) public employerRoles;
     mapping(address => uint256[]) public candidateApplications;
+    mapping(address => mapping(uint256 => bool)) public hasApplied;
+    mapping(uint256 => uint256) public roleMatchCount;
+    mapping(uint256 => uint256) public roleApplicationCount;
 
     event RolePosted(uint256 indexed roleId, address indexed employer, string title);
     event ApplicationSubmitted(uint256 indexed applicationId, uint256 indexed roleId, address indexed candidate);
     event MatchComputed(uint256 indexed applicationId);
+    event MatchRevealed(uint256 indexed applicationId, uint256 indexed roleId, address indexed candidate);
+    event RoleClosed(uint256 indexed roleId, address indexed employer);
 
     function postRole(
         externalEuint32 _minYears,
@@ -75,7 +81,9 @@ contract BlindHire is ZamaEthereumConfig {
         externalEuint32 _score,
         bytes calldata _scoreProof
     ) external returns (uint256) {
+        require(roleId < roleCount, "Role does not exist");
         require(roles[roleId].active, "Role is not active");
+        require(!hasApplied[msg.sender][roleId], "Already applied to this role");
 
         euint32 encYears = FHE.fromExternal(_years, _yearsProof);
         euint32 encScore = FHE.fromExternal(_score, _scoreProof);
@@ -99,13 +107,38 @@ contract BlindHire is ZamaEthereumConfig {
             matched: matched,
             yearsOk: yearsOk,
             scoreOk: scoreOk,
-            computed: true
+            computed: true,
+            matchRevealed: false
         });
 
+        hasApplied[msg.sender][roleId] = true;
         candidateApplications[msg.sender].push(appId);
+        roleApplicationCount[roleId]++;
+
         emit ApplicationSubmitted(appId, roleId, msg.sender);
         emit MatchComputed(appId);
         return appId;
+    }
+
+    function confirmMatch(uint256 appId) external {
+        Application storage app = applications[appId];
+        require(app.candidate == msg.sender, "Not your application");
+        require(app.computed, "Match not computed");
+        require(!app.matchRevealed, "Match already confirmed");
+
+        app.matchRevealed = true;
+        roleMatchCount[app.roleId]++;
+
+        emit MatchRevealed(appId, app.roleId, msg.sender);
+    }
+
+    function closeRole(uint256 roleId) external {
+        require(roleId < roleCount, "Role does not exist");
+        require(roles[roleId].employer == msg.sender, "Not your role");
+        require(roles[roleId].active, "Role already closed");
+
+        roles[roleId].active = false;
+        emit RoleClosed(roleId, msg.sender);
     }
 
     function getMatchResult(uint256 appId) external view returns (ebool) {
@@ -124,9 +157,38 @@ contract BlindHire is ZamaEthereumConfig {
         return (applications[appId].yearsOk, applications[appId].scoreOk);
     }
 
-    function getRoleMetadata(uint256 roleId) external view returns (string memory title, string memory description, string memory category, address employer, bool active) {
+    function getRoleMetadata(uint256 roleId) external view returns (
+        string memory title,
+        string memory description,
+        string memory category,
+        address employer,
+        bool active
+    ) {
         Role storage r = roles[roleId];
         return (r.title, r.description, r.category, r.employer, r.active);
+    }
+
+    function getRoleStats(uint256 roleId) external view returns (
+        uint256 applicantCount,
+        uint256 matchCount
+    ) {
+        require(roleId < roleCount, "Role does not exist");
+        require(roles[roleId].employer == msg.sender, "Not your role");
+        return (roleApplicationCount[roleId], roleMatchCount[roleId]);
+    }
+
+    function getApplicationInfo(uint256 appId) external view returns (
+        uint256 roleId,
+        bool computed,
+        bool matchRevealed
+    ) {
+        Application storage app = applications[appId];
+        require(
+            msg.sender == app.candidate ||
+            msg.sender == roles[app.roleId].employer,
+            "Not authorized"
+        );
+        return (app.roleId, app.computed, app.matchRevealed);
     }
 
     function getEmployerRoles(address employer) external view returns (uint256[] memory) {

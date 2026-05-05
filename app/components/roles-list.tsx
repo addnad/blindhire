@@ -5,6 +5,8 @@ import { BLINDHIRE_ABI, BLINDHIRE_ADDRESS } from '@/lib/abi'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 
+const PAGE_SIZE = 5
+
 function RoleCard({ roleId }: { roleId: bigint }) {
   const { data } = useReadContract({
     address: BLINDHIRE_ADDRESS,
@@ -39,6 +41,8 @@ function RoleCard({ roleId }: { roleId: bigint }) {
 }
 
 export default function RolesList() {
+  const [page, setPage] = React.useState(0)
+
   const { data: roleCount } = useReadContract({
     address: BLINDHIRE_ADDRESS,
     abi: BLINDHIRE_ABI,
@@ -46,18 +50,52 @@ export default function RolesList() {
   })
 
   const count = roleCount ? Number(roleCount) : 0
-  const roleIds = Array.from({ length: count }, (_, i) => BigInt(i))
+  const totalPages = Math.ceil(count / PAGE_SIZE)
+  const start = page * PAGE_SIZE
+  const end = Math.min(start + PAGE_SIZE, count)
+  const roleIds = Array.from({ length: end - start }, (_, i) => BigInt(start + i))
 
-  return count === 0 ? (
+  if (count === 0) return (
     <div className="border border-foreground/10 p-12 text-center">
       <p className="text-muted-foreground font-mono text-sm mb-6">No roles posted yet.</p>
       <Button asChild className="bg-foreground text-background hover:bg-foreground/90 rounded-full px-8">
         <Link href="/employer">Post the first role</Link>
       </Button>
     </div>
-  ) : (
+  )
+
+  return (
     <div className="space-y-4">
-      {roleIds.map(id => <RoleCard key={id.toString()} roleId={id} />)}
+      <div className="space-y-4">
+        {roleIds.map(id => <RoleCard key={id.toString()} roleId={id} />)}
+      </div>
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between pt-6 border-t border-foreground/10">
+          <span className="font-mono text-xs text-muted-foreground">
+            Showing {start + 1}–{end} of {count} roles
+          </span>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(p => Math.max(0, p - 1))}
+              disabled={page === 0}
+              className="rounded-full px-4"
+            >
+              ← Prev
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+              disabled={page >= totalPages - 1}
+              className="rounded-full px-4"
+            >
+              Next →
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

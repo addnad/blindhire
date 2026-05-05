@@ -1,6 +1,6 @@
 'use client'
 import React from 'react'
-import { useAccount, useReadContract } from 'wagmi'
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { ConnectWallet } from '@/components/connect-button'
 import { Button } from '@/components/ui/button'
 import { BLINDHIRE_ABI, BLINDHIRE_ADDRESS } from '@/lib/abi'
@@ -9,6 +9,87 @@ import dynamic from 'next/dynamic'
 
 const MatchResult = dynamic(() => import('@/components/match-result'), { ssr: false })
 
+function RoleCard({ roleId, employerAddress }: { roleId: bigint, employerAddress: `0x${string}` }) {
+  const { data: metadata } = useReadContract({
+    address: BLINDHIRE_ADDRESS,
+    abi: BLINDHIRE_ABI,
+    functionName: 'getRoleMetadata',
+    args: [roleId],
+  })
+
+  const { data: stats, refetch: refetchStats } = useReadContract({
+    address: BLINDHIRE_ADDRESS,
+    abi: BLINDHIRE_ABI,
+    functionName: 'getRoleStats',
+    args: [roleId],
+  })
+
+  const { writeContract, data: closeTxHash, isPending: isClosing } = useWriteContract()
+  const { isSuccess: closedSuccess } = useWaitForTransactionReceipt({ hash: closeTxHash })
+
+  React.useEffect(() => {
+    if (closedSuccess) refetchStats()
+  }, [closedSuccess])
+
+  const handleClose = () => {
+    writeContract({
+      address: BLINDHIRE_ADDRESS,
+      abi: BLINDHIRE_ABI,
+      functionName: 'closeRole',
+      args: [roleId],
+    })
+  }
+
+  const title = metadata?.[0] ?? '...'
+  const category = metadata?.[2] ?? ''
+  const active = metadata?.[4] ?? true
+  const applicantCount = stats?.[0] ?? 0n
+  const matchCount = stats?.[1] ?? 0n
+  const hasMatches = matchCount > 0n
+
+  return (
+    <div className={`border p-6 transition-colors ${hasMatches ? 'border-foreground/30' : 'border-foreground/10 hover:border-foreground/20'}`}>
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-1 flex-1">
+          <div className="flex items-center gap-3">
+            <p className="font-mono text-xs text-muted-foreground uppercase tracking-widest">{category}</p>
+            {hasMatches && (
+              <span className="font-mono text-xs bg-foreground text-background px-2 py-0.5">
+                {matchCount.toString()} match{matchCount > 1n ? 'es' : ''} ✓
+              </span>
+            )}
+            {!active && (
+              <span className="font-mono text-xs text-muted-foreground border border-foreground/10 px-2 py-0.5">
+                closed
+              </span>
+            )}
+          </div>
+          <p className="text-2xl font-display">{title}</p>
+          <p className="font-mono text-xs text-muted-foreground">
+            {applicantCount.toString()} applicant{applicantCount !== 1n ? 's' : ''} · requirements encrypted ✓
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="font-mono text-xs text-muted-foreground border border-foreground/10 px-3 py-1">
+            #{roleId.toString()}
+          </span>
+          {active && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleClose}
+              disabled={isClosing}
+              className="rounded-full font-mono text-xs"
+            >
+              {isClosing ? 'Closing...' : 'Close role'}
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function EmployerDashboard({ address }: { address: `0x${string}` }) {
   const { data: roleIds } = useReadContract({
     address: BLINDHIRE_ADDRESS,
@@ -16,6 +97,8 @@ function EmployerDashboard({ address }: { address: `0x${string}` }) {
     functionName: 'getEmployerRoles',
     args: [address],
   })
+
+  const totalMatches = roleIds?.length ?? 0
 
   return (
     <div className="space-y-8">
@@ -34,19 +117,60 @@ function EmployerDashboard({ address }: { address: `0x${string}` }) {
         </div>
       ) : (
         <div className="space-y-3">
-          {roleIds.map((id) => (
-            <div key={id.toString()} className="border border-foreground/10 p-6 flex items-center justify-between hover:border-foreground/20 transition-colors">
-              <div className="space-y-1">
-                <p className="font-mono text-xs text-muted-foreground uppercase tracking-widest">Role ID</p>
-                <p className="text-3xl font-display">{id.toString()}</p>
-              </div>
-              <span className="font-mono text-xs text-muted-foreground border border-foreground/10 px-3 py-1">
-                requirements encrypted ✓
-              </span>
-            </div>
+          {[...roleIds].reverse().map((id) => (
+            <RoleCard key={id.toString()} roleId={id} employerAddress={address} />
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+function ApplicationCard({ appId, userAddress }: { appId: bigint, userAddress: `0x${string}` }) {
+  const { data: appInfo } = useReadContract({
+    address: BLINDHIRE_ADDRESS,
+    abi: BLINDHIRE_ABI,
+    functionName: 'getApplicationInfo',
+    args: [appId],
+  })
+
+  const roleId = appInfo?.[0] ?? 0n
+  const matchRevealed = appInfo?.[2] ?? false
+
+  const { data: metadata } = useReadContract({
+    address: BLINDHIRE_ADDRESS,
+    abi: BLINDHIRE_ABI,
+    functionName: 'getRoleMetadata',
+    args: [roleId],
+    query: { enabled: appInfo !== undefined },
+  })
+
+  const title = metadata?.[0] ?? '...'
+  const category = metadata?.[2] ?? ''
+  const active = metadata?.[4] ?? true
+
+  return (
+    <div className="border border-foreground/10 p-6 hover:border-foreground/20 transition-colors">
+      <div className="flex items-start justify-between gap-4 mb-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
+            <p className="font-mono text-xs text-muted-foreground uppercase tracking-widest">{category}</p>
+            {!active && (
+              <span className="font-mono text-xs text-muted-foreground border border-foreground/10 px-2 py-0.5">
+                role closed
+              </span>
+            )}
+            {matchRevealed && (
+              <span className="font-mono text-xs bg-foreground text-background px-2 py-0.5">
+                match confirmed ✓
+              </span>
+            )}
+          </div>
+          <p className="text-2xl font-display">{title}</p>
+          <p className="font-mono text-xs text-muted-foreground">Role #{roleId.toString()} · App #{appId.toString()}</p>
+        </div>
+      </div>
+      <MatchResult appId={appId} onMatchConfirmed={() => {}} />
     </div>
   )
 }
@@ -76,19 +200,8 @@ function CandidateDashboard({ address }: { address: `0x${string}` }) {
         </div>
       ) : (
         <div className="space-y-3">
-          {appIds.map((id) => (
-            <div key={id.toString()} className="border border-foreground/10 p-6 hover:border-foreground/20 transition-colors">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="font-mono text-xs text-muted-foreground uppercase tracking-widest">Application ID</p>
-                  <p className="text-3xl font-display">{id.toString()}</p>
-                </div>
-                <span className="font-mono text-xs text-muted-foreground border border-foreground/10 px-3 py-1">
-                  match computed ✓
-                </span>
-              </div>
-              <MatchResult appId={id} />
-            </div>
+          {[...appIds].reverse().map((id) => (
+            <ApplicationCard key={id.toString()} appId={id} userAddress={address} />
           ))}
         </div>
       )}
@@ -102,7 +215,6 @@ export default function Dashboard() {
 
   return (
     <div>
-      {/* Header */}
       <div className="mb-16">
         <span className="inline-flex items-center gap-3 text-sm font-mono text-muted-foreground mb-6">
           <span className="w-8 h-px bg-foreground/30" />
@@ -125,7 +237,6 @@ export default function Dashboard() {
         </div>
       ) : (
         <div className="space-y-10">
-          {/* Tab switcher */}
           <div className="flex gap-0 border-b border-foreground/10">
             <button onClick={() => setView('employer')}
               className={`font-mono text-sm px-6 py-3 transition-colors border-b-2 -mb-px ${view === 'employer' ? 'border-foreground text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
@@ -136,7 +247,6 @@ export default function Dashboard() {
               Candidate
             </button>
           </div>
-
           {view === 'employer' ? <EmployerDashboard address={address!} /> : <CandidateDashboard address={address!} />}
         </div>
       )}

@@ -32,10 +32,23 @@ export default function EmployerForm() {
     e.preventDefault()
     if (!address) return
     setError('')
+
+    const parsedYears = parseInt(minYears)
+    const parsedScore = parseInt(minScore)
+
+    if (isNaN(parsedYears) || parsedYears < 0 || parsedYears > 40) {
+      setError('Minimum years must be a number between 0 and 40.')
+      return
+    }
+    if (isNaN(parsedScore) || parsedScore < 0 || parsedScore > 100) {
+      setError('Minimum score must be a number between 0 and 100.')
+      return
+    }
+
     setEncrypting(true)
     try {
-      const encYears = await encryptUint32(parseInt(minYears), BLINDHIRE_ADDRESS, address)
-      const encScore = await encryptUint32(parseInt(minScore), BLINDHIRE_ADDRESS, address)
+      const encYears = await encryptUint32(parsedYears, BLINDHIRE_ADDRESS, address)
+      const encScore = await encryptUint32(parsedScore, BLINDHIRE_ADDRESS, address)
       writeContract({
         address: BLINDHIRE_ADDRESS,
         abi: BLINDHIRE_ABI,
@@ -125,7 +138,7 @@ export default function EmployerForm() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <label className={labelClass}>Minimum years of experience</label>
-                <input type="number" min="0" max="20" required value={minYears} onChange={e => setMinYears(e.target.value)} placeholder="e.g. 3" className={inputClass} />
+                <input type="number" min="0" max="40" required value={minYears} onChange={e => setMinYears(e.target.value)} placeholder="e.g. 3" className={inputClass} />
               </div>
               <div className="space-y-2">
                 <label className={labelClass}>Minimum skill score (0–100)</label>

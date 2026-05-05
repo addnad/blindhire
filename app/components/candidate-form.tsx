@@ -31,10 +31,23 @@ export default function CandidateForm() {
     e.preventDefault()
     if (!address) return
     setError('')
+
+    const parsedYears = parseInt(years)
+    const parsedScore = parseInt(score)
+
+    if (isNaN(parsedYears) || parsedYears < 0 || parsedYears > 40) {
+      setError('Years of experience must be a number between 0 and 40.')
+      return
+    }
+    if (isNaN(parsedScore) || parsedScore < 0 || parsedScore > 100) {
+      setError('Skill score must be a number between 0 and 100.')
+      return
+    }
+
     setEncrypting(true)
     try {
-      const encYears = await encryptUint32(parseInt(years), BLINDHIRE_ADDRESS, address)
-      const encScore = await encryptUint32(parseInt(score), BLINDHIRE_ADDRESS, address)
+      const encYears = await encryptUint32(parsedYears, BLINDHIRE_ADDRESS, address)
+      const encScore = await encryptUint32(parsedScore, BLINDHIRE_ADDRESS, address)
       writeContract({
         address: BLINDHIRE_ADDRESS,
         abi: BLINDHIRE_ABI,
@@ -73,7 +86,7 @@ export default function CandidateForm() {
           <div>
             <h2 className="text-3xl font-display mb-3">You applied.</h2>
             <p className="text-muted-foreground leading-relaxed">
-              Your credentials were encrypted and submitted to the FHE contract. 
+              Your credentials were encrypted and submitted to the FHE contract.
               The match has already been computed on-chain — your scores were never revealed.
             </p>
           </div>
@@ -87,8 +100,8 @@ export default function CandidateForm() {
           <div className="border border-foreground/10 p-6 flex flex-col gap-3">
             <p className="font-mono text-xs text-muted-foreground uppercase tracking-widest">What happens next</p>
             <p className="text-foreground leading-relaxed">
-              Go to your <strong>Dashboard → Candidate tab</strong> to reveal your match result. 
-              You will be asked to sign a message with your wallet to decrypt your personal result. 
+              Go to your <strong>Dashboard → Candidate tab</strong> to reveal your match result.
+              You will be asked to sign a message with your wallet to decrypt your personal result.
               The employer never sees your scores — only you can decrypt your outcome.
             </p>
           </div>

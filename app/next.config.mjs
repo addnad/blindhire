@@ -9,7 +9,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  serverExternalPackages: ['@zama-fhe/relayer-sdk'],
+  serverExternalPackages: ['@zama-fhe/relayer-sdk', 'pino', 'pino-pretty'],
 }
 
 export default nextConfig

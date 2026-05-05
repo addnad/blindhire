@@ -6,51 +6,60 @@ import { Copy, Check } from "lucide-react";
 const codeExamples = [
   {
     label: "Install",
-    code: `npm install @optimus/sdk
+    code: `npm install @zama-fhe/relayer-sdk
 
 # or
-yarn add @optimus/sdk
-pnpm add @optimus/sdk`,
+pnpm add @zama-fhe/relayer-sdk
+yarn add @zama-fhe/relayer-sdk`,
   },
   {
-    label: "Initialize",
-    code: `import { Optimus } from '@optimus/sdk'
+    label: "Encrypt",
+    code: `import { createInstance, SepoliaConfigV2 } from '@zama-fhe/relayer-sdk/web'
 
-const optimus = new Optimus({
-  apiKey: process.env.OPTIMUS_KEY
-})`,
-  },
-  {
-    label: "Deploy",
-    code: `const app = await optimus.deploy({
-  name: 'my-app',
-  region: 'auto',
-  scaling: {
-    min: 1,
-    max: 100
-  }
+const instance = await createInstance({
+  ...SepoliaConfigV2,
+  network: window.ethereum
 })
 
-console.log('Live at:', app.url)`,
+// Encrypt a candidate's skill score (0–100)
+const { handles, inputProof } = await instance
+  .createEncryptedInput(contractAddress, userAddress)
+  .add32(skillScore)
+  .encrypt()`,
+  },
+  {
+    label: "Decrypt",
+    code: `// Generate a one-time keypair for user decryption
+const { privateKey, publicKey } = instance.generateKeypair()
+
+const eip712 = instance.createEIP712(
+  publicKey,
+  [contractAddress],
+  startTimestamp,
+  durationDays
+)
+
+// User signs — private key never leaves the browser
+const signature = await signTypedDataAsync(eip712)`,
   },
 ];
 
 const features = [
-  { 
-    title: "TypeScript native", 
-    description: "Full type safety with auto-generated types."
+  {
+    title: "Fully Homomorphic Encryption",
+    description: "Computations run on encrypted data — plaintext never touches the chain.",
   },
-  { 
-    title: "Zero config", 
-    description: "Sensible defaults that just work."
+  {
+    title: "Confidential matching",
+    description: "Employers set encrypted thresholds. Candidates submit encrypted scores.",
   },
-  { 
-    title: "Edge-ready", 
-    description: "Runs anywhere: Node, Deno, Bun, browsers."
+  {
+    title: "Client-side keypairs",
+    description: "Decryption keys are generated in the browser and never sent to a server.",
   },
-  { 
-    title: "12KB gzipped", 
-    description: "Lightweight with zero dependencies."
+  {
+    title: "Zama FHEVM",
+    description: "Built on Zama's fhEVM — EVM-compatible FHE on Ethereum Sepolia.",
   },
 ];
 
@@ -122,15 +131,15 @@ export function DevelopersSection() {
               For developers
             </span>
             <h2 className="text-4xl lg:text-6xl font-display tracking-tight mb-8">
-              Built by devs.
+              Private by design.
               <br />
-              <span className="text-muted-foreground">For devs.</span>
+              <span className="text-muted-foreground">Encrypted by default.</span>
             </h2>
             <p className="text-xl text-muted-foreground mb-12 leading-relaxed">
-              A thoughtfully designed SDK that gets out of your way. 
-              Ship faster with intuitive APIs and exceptional documentation.
+              BlindHire uses Zama's fhEVM to match candidates to roles without
+              ever revealing scores or thresholds — on-chain FHE from day one.
             </p>
-            
+
             {/* Features */}
             <div className="grid grid-cols-2 gap-6">
               {features.map((feature, index) => (
@@ -147,7 +156,7 @@ export function DevelopersSection() {
               ))}
             </div>
           </div>
-          
+
           {/* Right: Code block */}
           <div
             className={`lg:sticky lg:top-32 transition-all duration-700 delay-200 ${
@@ -188,13 +197,13 @@ export function DevelopersSection() {
                   )}
                 </button>
               </div>
-              
+
               {/* Code content */}
               <div className="p-8 font-mono text-sm bg-foreground/[0.01] min-h-[220px]">
                 <pre className="text-foreground/80">
                   {codeExamples[activeTab].code.split('\n').map((line, lineIndex) => (
-                    <div 
-                      key={`${activeTab}-${lineIndex}`} 
+                    <div
+                      key={`${activeTab}-${lineIndex}`}
                       className="leading-loose dev-code-line"
                       style={{ animationDelay: `${lineIndex * 80}ms` }}
                     >
@@ -216,14 +225,14 @@ export function DevelopersSection() {
                 </pre>
               </div>
             </div>
-            
+
             {/* Links */}
             <div className="mt-6 flex items-center gap-6 text-sm">
-              <a href="#" className="text-foreground hover:underline underline-offset-4">
+              <a href="https://docs.zama.ai/fhevm" target="_blank" rel="noopener noreferrer" className="text-foreground hover:underline underline-offset-4">
                 Read the docs
               </a>
               <span className="text-foreground/20">|</span>
-              <a href="#" className="text-muted-foreground hover:text-foreground">
+              <a href="https://github.com/addnad/blindhire" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
                 View on GitHub
               </a>
             </div>

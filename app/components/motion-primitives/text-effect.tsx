@@ -7,7 +7,7 @@ type Preset = 'fade-in-blur' | 'fade' | 'slide'
 interface TextEffectProps {
   children?: React.ReactNode
   text?: string
-  as?: keyof JSX.IntrinsicElements
+  as?: keyof React.JSX.IntrinsicElements
   preset?: Preset
   className?: string
   delay?: number
