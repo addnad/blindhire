@@ -75,7 +75,7 @@ export function Navigation() {
 
       {/* Mobile Menu */}
       <div className={`md:hidden fixed inset-0 bg-background z-40 transition-all duration-500 ${isMobileMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`} style={{ top: 0 }}>
-        <div className="flex flex-col h-full px-8 pt-28 pb-8">
+        <div className="flex flex-col h-full px-8 pt-8 pb-8"><div className="flex justify-end"><button onClick={() => setIsMobileMenuOpen(false)} className="p-2" aria-label="Close menu"><X className="w-6 h-6" /></button></div>
           <div className="flex-1 flex flex-col justify-center gap-8">
             {navLinks.map((link, i) => (
               <Link key={link.name} href={link.href} onClick={() => setIsMobileMenuOpen(false)}
