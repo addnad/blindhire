@@ -22,6 +22,7 @@ function RoleCard({ roleId, employerAddress }: { roleId: bigint, employerAddress
     abi: BLINDHIRE_ABI,
     functionName: 'getRoleStats',
     args: [roleId],
+    account: employerAddress,
   })
 
   const { writeContract, data: closeTxHash, isPending: isClosing } = useWriteContract()
@@ -132,6 +133,7 @@ function ApplicationCard({ appId, userAddress }: { appId: bigint, userAddress: `
     abi: BLINDHIRE_ABI,
     functionName: 'getApplicationInfo',
     args: [appId],
+    account: userAddress,
   })
 
   const roleId = appInfo?.[0] ?? 0n
