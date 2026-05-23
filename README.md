@@ -5,8 +5,7 @@
 Built for the **Zama Developer Program — Mainnet Season 2**.
 
 🔗 **Live demo:** ((https://blindhire-app.vercel.app))  old link (https://blindhire.xyz) got blocked
-
-🎥 **Video demo:** *(coming soon)*  
+ 
 📄 **Contract:** [`0x0f2Aae67f74EBDA62767084B15Fb7524f8ec2D86`](https://sepolia.etherscan.io/address/0x0f2Aae67f74EBDA62767084B15Fb7524f8ec2D86) on Sepolia
 
 ---
